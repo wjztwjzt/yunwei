@@ -13,7 +13,9 @@ case "$1" in
     off)
         systemctl disable --now "$2"
         ;;
-
+    st)
+        systemctl status "$2" --no-pager -l
+        ;;
     rf)
         if [ -z "$2" ]; then
             systemctl reset-failed
