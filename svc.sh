@@ -16,6 +16,130 @@ case "$1" in
     st)
         systemctl status "$2" --no-pager -l
         ;;
+    timer)
+        cmd="$2"
+        timer="${3%.timer}.timer"
+
+        case "$cmd" in
+            ls)
+                systemctl list-timers --all
+                ;;
+
+            active)
+                systemctl list-timers
+                ;;
+
+            status|st)
+                systemctl status "$timer" --no-pager -l
+                ;;
+
+            start|stop|restart|reload|enable|disable)
+                systemctl "$cmd" "$timer"
+                ;;
+
+            now)
+                systemctl enable --now "$timer"
+                ;;
+
+            off)
+                systemctl disable --now "$timer"
+                ;;
+
+            log)
+                journalctl -u "$timer" -f
+                ;;
+
+            logs)
+                journalctl -u "$timer" -n "${4:-100}"
+                ;;
+
+            cat)
+                systemctl cat "$timer"
+                ;;
+
+            mk)
+                name="${3%.timer}"
+
+                if [ -z "$name" ]; then
+                    echo "Usage: svc timer mk <name>"
+                    exit 1
+                fi
+
+                cat >/etc/systemd/system/$name.service <<EOL
+[Unit]
+Description=$name task
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /data/$name/main.py
+EOL
+
+                cat >/etc/systemd/system/$name.timer <<EOL
+[Unit]
+Description=$name timer
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOL
+
+                systemctl daemon-reload
+
+                echo "✓ 已创建："
+                echo "/etc/systemd/system/$name.service"
+                echo "/etc/systemd/system/$name.timer"
+                ;;
+
+            rm)
+                name="${3%.timer}"
+
+                systemctl stop "$name.timer" 2>/dev/null
+                systemctl disable "$name.timer" 2>/dev/null
+
+                rm -f /etc/systemd/system/$name.timer
+                rm -f /etc/systemd/system/$name.service
+
+                systemctl daemon-reload
+                systemctl reset-failed
+
+                echo "✓ 已删除 $name.timer"
+                ;;
+
+            *)
+                cat <<EOL
+
+Timer Commands:
+
+svc timer ls
+svc timer active
+
+svc timer status <timer>
+svc timer start <timer>
+svc timer stop <timer>
+svc timer restart <timer>
+
+svc timer enable <timer>
+svc timer disable <timer>
+
+svc timer now <timer>
+svc timer off <timer>
+
+svc timer log <timer>
+svc timer logs <timer> [n]
+
+svc timer cat <timer>
+
+svc timer mk <name>
+svc timer rm <name>
+
+EOL
+                ;;
+        esac
+        ;;
     rf)
         if [ -z "$2" ]; then
             systemctl reset-failed
@@ -182,4 +306,3 @@ esac
 EOF
 
 chmod +x /usr/local/bin/svc
-
