@@ -1,0 +1,26 @@
+# 环境配置（含敏感信息）
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# 临时文件
+/tmp/
+*.swp
+*.swo
+*~
+
+# 日志
+*.log
+
+# Claude Code
+.claude/
+
+# IDE
+.vscode/
+.idea/

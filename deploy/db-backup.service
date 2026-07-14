@@ -1,0 +1,21 @@
+[Unit]
+Description=MySQL 全量备份（WebDAV）
+After=network-online.target mysqld.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/yunwei
+ExecStart=/usr/bin/python3 /opt/yunwei/db_backup.py
+EnvironmentFile=/opt/yunwei/.env
+StandardOutput=journal
+StandardError=journal
+
+# 安全加固
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/yunwei /tmp
+ReadOnlyPaths=/etc/mysql
