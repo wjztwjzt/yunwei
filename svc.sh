@@ -185,6 +185,60 @@ EOL
     logs)
         journalctl -u "$2" -n "${3:-100}"
         ;;
+    flog)
+
+        if [ -z "$2" ]; then
+
+            echo "Usage: svc flog <service>"
+
+            exit 1
+
+        fi
+
+        tail -f "/var/log/$2.log"
+
+        ;;
+
+    flogs)
+
+        if [ -z "$2" ]; then
+
+            echo "Usage: svc flogs <service> [n]"
+
+            exit 1
+
+        fi
+
+        tail -n "${3:-100}" "/var/log/$2.log"
+
+        ;;
+
+    err)
+
+        if [ -z "$2" ]; then
+
+            echo "Usage: svc err <service>"
+
+            exit 1
+
+        fi
+
+        tail -f "/var/log/${2}err.log"
+
+        ;;
+
+    errs)
+
+        if [ -z "$2" ]; then
+
+            echo "Usage: svc errs <service> [n]"
+
+            exit 1
+
+        fi
+
+        tail -n "${3:-100}" "/var/log/${2}err.log"
+    ;;
 
     cat)
         systemctl cat "$2"
@@ -212,35 +266,45 @@ EOL
         done
         ;;
 
-    mk)
-        if [ -z "$2" ]; then
-            echo "Usage:"
-            echo "  svc mk <service-name>"
-            exit 1
-        fi
+mk)
+    if [ -z "$2" ]; then
+        echo "Usage:"
+        echo "  svc mk <service-name>"
+        exit 1
+    fi
 
-        cat >/etc/systemd/system/$2.service <<EOL
+    name="$2"
+
+    cat >/etc/systemd/system/$name.service <<EOL
 [Unit]
-Description=$2
+Description=$name
 After=network.target
 
 [Service]
-WorkingDirectory=/data/$2
-ExecStart=/data/$2/venv/bin/python /data/$2/main.py
+WorkingDirectory=/data/$name
+ExecStart=/data/$name/venv/bin/python /data/$name/main.py
 Restart=always
 RestartSec=5
 User=root
+
+StandardOutput=append:/var/log/${name}.log
+StandardError=append:/var/log/${name}err.log
 
 [Install]
 WantedBy=multi-user.target
 EOL
 
-        systemctl daemon-reload
+    touch "/var/log/${name}.log"
+    touch "/var/log/${name}err.log"
 
-        echo
-        echo "✓ 已创建:"
-        echo "/etc/systemd/system/$2.service"
-        ;;
+    systemctl daemon-reload
+
+    echo
+    echo "✓ 已创建:"
+    echo "/etc/systemd/system/$name.service"
+    echo "/var/log/${name}.log"
+    echo "/var/log/${name}err.log"
+    ;;
 
     rm)
         if [ -z "$2" ]; then
@@ -280,6 +344,12 @@ svc rf <service>         重置失败服务
 
 svc log <service>        实时日志
 svc logs <service> [n]   最近 n 行日志(默认100)
+
+svc flog <service>        实时业务日志
+svc flogs <service> [n]   最近 n 行业务日志
+
+svc err <service>         实时错误日志
+svc errs <service> [n]    最近 n 行错误日志
 
 svc cat <service>        查看service
 svc edit <service>       编辑service
