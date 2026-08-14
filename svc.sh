@@ -265,7 +265,7 @@ EOL
             fi
         done
         ;;
-    disk)
+    du)
 	    echo "磁盘占用：/data"
 	    du -xhd1 /data 2>/dev/null | sort -h
         ;;
