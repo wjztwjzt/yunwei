@@ -265,6 +265,11 @@ EOL
             fi
         done
         ;;
+    disk)
+	    echo "磁盘占用：/data"
+	    du -xhd1 /data 2>/dev/null | sort -h
+        ;;
+	
 
 mk)
     if [ -z "$2" ]; then
