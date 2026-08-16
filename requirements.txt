@@ -1,0 +1,2 @@
+webdav4>=0.9.8
+python-dotenv>=1.0.0
