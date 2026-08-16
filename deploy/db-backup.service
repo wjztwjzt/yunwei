@@ -7,10 +7,10 @@ Wants=network-online.target
 Type=oneshot
 User=root
 WorkingDirectory=/opt/yunwei
-ExecStart=/usr/bin/python3 /opt/yunwei/db_backup.py
+ExecStart=/opt/yunwei/venv/bin/python /opt/yunwei/db_backup.py
 EnvironmentFile=/opt/yunwei/.env
-StandardOutput=journal
-StandardError=journal
+StandardOutput=append:/var/log/db_backup.log
+StandardError=append:/var/log/db_backuperr.log
 
 # 安全加固
 NoNewPrivileges=yes
