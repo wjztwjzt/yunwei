@@ -115,8 +115,6 @@ EOL
 Timer Commands:
 
 svc timer ls
-svc timer active
-
 svc timer status <timer>
 svc timer start <timer>
 svc timer stop <timer>
@@ -185,60 +183,6 @@ EOL
     logs)
         journalctl -u "$2" -n "${3:-100}"
         ;;
-    flog)
-
-        if [ -z "$2" ]; then
-
-            echo "Usage: svc flog <service>"
-
-            exit 1
-
-        fi
-
-        tail -f "/var/log/$2.log"
-
-        ;;
-
-    flogs)
-
-        if [ -z "$2" ]; then
-
-            echo "Usage: svc flogs <service> [n]"
-
-            exit 1
-
-        fi
-
-        tail -n "${3:-100}" "/var/log/$2.log"
-
-        ;;
-
-    err)
-
-        if [ -z "$2" ]; then
-
-            echo "Usage: svc err <service>"
-
-            exit 1
-
-        fi
-
-        tail -f "/var/log/${2}err.log"
-
-        ;;
-
-    errs)
-
-        if [ -z "$2" ]; then
-
-            echo "Usage: svc errs <service> [n]"
-
-            exit 1
-
-        fi
-
-        tail -n "${3:-100}" "/var/log/${2}err.log"
-    ;;
 
     cat)
         systemctl cat "$2"
@@ -246,14 +190,6 @@ EOL
 
     edit)
         systemctl edit --full "$2"
-        ;;
-
-    active)
-        systemctl is-active "$2"
-        ;;
-
-    enabled)
-        systemctl is-enabled "$2"
         ;;
 
     py)
@@ -282,33 +218,40 @@ mk)
 
     cat >/etc/systemd/system/$name.service <<EOL
 [Unit]
-Description=$name
-After=network.target
+Description=%i
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-WorkingDirectory=/data/$name
-ExecStart=/data/$name/venv/bin/python /data/$name/main.py
+Type=simple
+
+User=root
+Group=root
+
+WorkingDirectory=/data/%i
+
+EnvironmentFile=/data/%i/.env
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/data/%i/venv/bin/python /data/%i/main.py
+
 Restart=always
 RestartSec=5
-User=root
 
-StandardOutput=append:/var/log/${name}.log
-StandardError=append:/var/log/${name}err.log
+StandardOutput=journal
+StandardError=journal
+
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target
 EOL
-
-    touch "/var/log/${name}.log"
-    touch "/var/log/${name}err.log"
 
     systemctl daemon-reload
 
     echo
     echo "✓ 已创建:"
     echo "/etc/systemd/system/$name.service"
-    echo "/var/log/${name}.log"
-    echo "/var/log/${name}err.log"
     ;;
 
     rm)
@@ -339,9 +282,6 @@ svc restart <service>
 svc reload <service>
 svc status <service>
 
-svc enable <service>
-svc disable <service>
-
 svc now <service>        启动并开机自启
 svc off <service>        停止并取消开机自启
 
@@ -350,17 +290,8 @@ svc rf <service>         重置失败服务
 svc log <service>        实时日志
 svc logs <service> [n]   最近 n 行日志(默认100)
 
-svc flog <service>        实时业务日志
-svc flogs <service> [n]   最近 n 行业务日志
-
-svc err <service>         实时错误日志
-svc errs <service> [n]    最近 n 行错误日志
-
 svc cat <service>        查看service
 svc edit <service>       编辑service
-
-svc active <service>
-svc enabled <service>
 
 svc ls                   正在运行的服务
 svc files                所有service
