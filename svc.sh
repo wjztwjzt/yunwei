@@ -16,6 +16,9 @@ case "$1" in
     st)
         systemctl status "$2" --no-pager -l
         ;;
+    delrm)
+        cd /data/downloads && rm -rf *
+        ;;
     timer)
         cmd="$2"
         timer="${3%.timer}.timer"
